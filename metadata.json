@@ -1,0 +1,8 @@
+{
+  "name": "Zema Studio",
+  "description": "Multilingual creative studio to turn text into music, advertisements, and videos, and animate photos into video.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

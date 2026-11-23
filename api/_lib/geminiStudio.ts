@@ -103,6 +103,28 @@ function isRetryableError(err: unknown): boolean {
   );
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        Object.assign(new Error(`${label} timed out. Please try again.`), {
+          status: 504,
+        })
+      );
+    }, ms);
+    promise.then(
+      (val) => {
+        clearTimeout(timer);
+        resolve(val);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 async function generateWithFallback(
   ai: GoogleGenAI,
   params: {
@@ -110,40 +132,51 @@ async function generateWithFallback(
     systemInstruction: string;
     responseSchema: Record<string, unknown>;
   }
-) {
+): Promise<string> {
   const attempts: Array<{
     model: string;
-    thinkingLevel: ThinkingLevel;
+    thinkingLevel?: ThinkingLevel;
   }> = [
     { model: "gemini-4-hydrogen", thinkingLevel: ThinkingLevel.LOW },
     { model: "gemini-3.1-flash-lite", thinkingLevel: ThinkingLevel.MINIMAL },
-    { model: "gemini-3.1-flash-lite", thinkingLevel: ThinkingLevel.MINIMAL },
+    { model: "gemini-3.8-flash" },
   ];
 
   let lastErr: unknown;
   for (let i = 0; i < attempts.length; i++) {
     const { model, thinkingLevel } = attempts[i];
     try {
-      return await ai.models.generateContent({
-        model,
-        contents: params.contents as Parameters<
-          typeof ai.models.generateContent
-        >[0]["contents"],
-        config: {
-          systemInstruction: params.systemInstruction,
-          thinkingConfig: { thinkingLevel },
-          responseMimeType: "application/json",
-          responseSchema: params.responseSchema,
-        },
-      });
+      const config: Record<string, unknown> = {
+        systemInstruction: params.systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: params.responseSchema,
+      };
+      if (thinkingLevel) {
+        config.thinkingConfig = { thinkingLevel };
+      }
+      const res = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: params.contents as Parameters<
+            typeof ai.models.generateContent
+          >[0]["contents"],
+          config,
+        }),
+        12000,
+        model
+      );
+      return (res.text ?? "{}").trim();
     } catch (err) {
       lastErr = err;
-      if (!isRetryableError(err) || i === attempts.length - 1) {
+      const { status } = parseApiError(err);
+      const canFallback = isRetryableError(err) || status === 404 || status === 504;
+      if (!canFallback || i === attempts.length - 1) {
         throw err;
       }
-      await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 300));
     }
   }
+
   throw lastErr;
 }
 
@@ -165,7 +198,7 @@ export async function handleTextToMusic(body: Record<string, unknown>) {
   const ai = getAiClient();
   const targetSeconds = durationMode === "pro" ? 28 : 16;
 
-  const compositionResponse = await generateWithFallback(ai, {
+  const scoreJsonText = await generateWithFallback(ai, {
     contents: `Compose a complete musical arrangement for this request:
 "${prompt}"
 Mood: ${mood}
@@ -225,7 +258,7 @@ Return a structured, genuinely musical composition in JSON:
     },
   });
 
-  const score = JSON.parse((compositionResponse.text ?? "{}").trim());
+  const score = JSON.parse(scoreJsonText || "{}");
   return { score };
 }
 
@@ -248,7 +281,7 @@ export async function handleTextToAd(body: Record<string, unknown>) {
 
   const ai = getAiClient();
 
-  const adResponse = await generateWithFallback(ai, {
+  const adJsonText = await generateWithFallback(ai, {
     contents: `Create a high-converting advertisement package for:\n"${prompt}"\n\nTarget Platform: ${platform}\nTone: ${tone}\nOutput Language for all customer-facing copy (headline, subheadline, voiceoverScript, socialCaption, callToAction, overlayText): ${outputLanguage}`,
     systemInstruction:
       "You are a world-class multilingual creative advertising director. Write natural, persuasive copy in the exact requested Output Language. Keep voiceoverScript spoken, rhythmic, and 25-45 words long. Also return a tasteful brand color palette (bgHex dark or light, accentHex, textHex) for the ad poster.",
@@ -278,7 +311,7 @@ export async function handleTextToAd(body: Record<string, unknown>) {
     },
   });
 
-  const adJson = JSON.parse((adResponse.text ?? "{}").trim()) as {
+  const adJson = JSON.parse(adJsonText || "{}") as {
     headline?: string;
     subheadline?: string;
     voiceoverScript?: string;
@@ -294,42 +327,50 @@ export async function handleTextToAd(body: Record<string, unknown>) {
   let audioWarning: string | null = null;
 
   if (adJson.voiceoverScript) {
-    try {
-      const validVoices = ["Puck", "Charon", "Kore", "Fenrir", "Zephyr"];
-      const chosenVoice = validVoices.includes(voiceName) ? voiceName : "Kore";
+    const validVoices = ["Puck", "Charon", "Kore", "Fenrir", "Zephyr"];
+    const chosenVoice = validVoices.includes(voiceName) ? voiceName : "Kore";
 
-      const ttsResponse = await ai.models.generateContent({
-        model: "gemini-3.8-flash-lite-tts",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: adJson.voiceoverScript,
-                speechMetadata: {
-                  style: `${tone} commercial voiceover`,
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const ttsResponse = await ai.models.generateContent({
+          model: "gemini-3.8-flash-lite-tts",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: adJson.voiceoverScript,
+                  speechMetadata: {
+                    style: `${tone} commercial voiceover`,
+                  },
                 },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: chosenVoice },
               },
-            ],
-          },
-        ],
-        config: {
-          responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: chosenVoice },
             },
           },
-        },
-      });
+        });
 
-      const base64Audio =
-        ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        audioDataUrl = `data:audio/wav;base64,${base64Audio}`;
+        const base64Audio =
+          ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (base64Audio) {
+          audioDataUrl = `data:audio/wav;base64,${base64Audio}`;
+          audioWarning = null;
+          break;
+        }
+      } catch (ttsErr) {
+        audioWarning = parseApiError(ttsErr).message;
+        if (!isRetryableError(ttsErr) || attempt === 2) {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
       }
-    } catch (ttsErr) {
-      audioWarning = parseApiError(ttsErr).message;
     }
   }
 
@@ -354,7 +395,7 @@ export async function handleTextToVideo(body: Record<string, unknown>) {
   const ai = getAiClient();
   const totalSec = Math.max(4, Math.min(10, parseInt(String(duration), 10) || 6));
 
-  const directorResponse = await generateWithFallback(ai, {
+  const directorJsonText = await generateWithFallback(ai, {
     contents: `Direct a ${totalSec}-second animated short video (${aspectRatio}) for:\n"${prompt}"`,
     systemInstruction: `You are a visual motion-graphics director. Break the user's scene into 3 sequential animated scenes totaling ${totalSec} seconds.
 Return JSON:
@@ -394,7 +435,7 @@ Return JSON:
     },
   });
 
-  const script = JSON.parse((directorResponse.text ?? "{}").trim());
+  const script = JSON.parse(directorJsonText || "{}");
   return { script };
 }
 
@@ -417,7 +458,7 @@ export async function handlePhotoToVideo(body: Record<string, unknown>) {
   const ai = getAiClient();
   const totalSec = Math.max(4, Math.min(10, parseInt(String(duration), 10) || 6));
 
-  const visionResponse = await generateWithFallback(ai, {
+  const visionJsonText = await generateWithFallback(ai, {
     contents: {
       parts: [
         {
@@ -454,6 +495,6 @@ Return JSON:
     },
   });
 
-  const choreography = JSON.parse((visionResponse.text ?? "{}").trim());
+  const choreography = JSON.parse(visionJsonText || "{}");
   return { choreography };
 }

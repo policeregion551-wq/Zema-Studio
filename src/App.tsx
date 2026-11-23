@@ -374,20 +374,20 @@ export default function App() {
         t={t}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Simple Input Composer */}
-          <section className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-6">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight text-balance">
+          <section className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5">
+            <div className="mb-4">
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight text-balance">
                 {t.titles[mode]}
               </h1>
-              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
+              <p className="text-sm text-slate-600 mt-1 leading-relaxed">
                 {t.subtitles[mode]}
               </p>
             </div>
 
-            <form onSubmit={handleGenerate} className="space-y-5">
+            <form onSubmit={handleGenerate} className="space-y-4">
               {mode === "photo-video" && (
                 <div>
                   <input
@@ -405,7 +405,7 @@ export default function App() {
                       <img
                         src={photoPreviewUrl}
                         alt="Uploaded preview"
-                        className="w-full h-52 object-cover rounded-xl border border-slate-200"
+                        className="w-full h-44 object-cover rounded-xl border border-slate-200"
                       />
                       <button
                         type="button"
@@ -425,7 +425,7 @@ export default function App() {
                         const f = e.dataTransfer.files?.[0];
                         if (f) handlePhotoFile(f);
                       }}
-                      className="w-full py-10 px-4 border-2 border-dashed border-slate-300 hover:border-blue-600 rounded-xl bg-slate-50 hover:bg-blue-50/30 transition-colors flex flex-col items-center justify-center text-center cursor-pointer"
+                      className="w-full py-8 px-4 border-2 border-dashed border-slate-300 hover:border-blue-600 rounded-xl bg-slate-50 hover:bg-blue-50/30 transition-colors flex flex-col items-center justify-center text-center cursor-pointer"
                     >
                       <Upload className="w-6 h-6 text-slate-400 mb-2" />
                       <span className="text-sm font-medium text-slate-800">
@@ -443,9 +443,9 @@ export default function App() {
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  rows={4}
+                  rows={3}
                   placeholder={t.placeholders[mode]}
-                  className="w-full px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-y"
+                  className="w-full px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-y"
                 />
 
                 <div className="mt-2.5">

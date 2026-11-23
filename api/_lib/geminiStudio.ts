@@ -143,6 +143,7 @@ async function generateWithFallback(
   ];
 
   let lastErr: unknown;
+  let lastNon404Err: unknown;
   for (let i = 0; i < attempts.length; i++) {
     const { model, thinkingLevel } = attempts[i];
     try {
@@ -162,22 +163,30 @@ async function generateWithFallback(
           >[0]["contents"],
           config,
         }),
-        12000,
+        6500,
         model
       );
       return (res.text ?? "{}").trim();
     } catch (err) {
       lastErr = err;
-      const { status } = parseApiError(err);
-      const canFallback = isRetryableError(err) || status === 404 || status === 504;
-      if (!canFallback || i === attempts.length - 1) {
-        throw err;
+      const { status, message } = parseApiError(err);
+      if (status !== 404) {
+        lastNon404Err = err;
       }
-      await new Promise((r) => setTimeout(r, 300));
+      const lowerMsg = message.toLowerCase();
+      const isKeyErr =
+        lowerMsg.includes("api key") || lowerMsg.includes("api_key");
+      const canFallback =
+        !isKeyErr &&
+        (isRetryableError(err) || status === 404 || status === 400 || status === 504);
+      if (!canFallback || i === attempts.length - 1) {
+        throw lastNon404Err ?? lastErr;
+      }
+      await new Promise((r) => setTimeout(r, 350));
     }
   }
 
-  throw lastErr;
+  throw lastNon404Err ?? lastErr;
 }
 
 export async function handleTextToMusic(body: Record<string, unknown>) {

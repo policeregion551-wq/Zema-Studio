@@ -40,43 +40,56 @@ async function postApiJson<T>(url: string, body: unknown): Promise<T> {
   ).replace(/\/$/, "");
   const targetUrl = configuredBase ? `${configuredBase}${url}` : url;
 
-  const res = await fetch(targetUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const maxAttempts = 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const res = await fetch(targetUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-  const rawText = await res.text();
-  const trimmed = rawText.trim();
-  const isHtml =
-    trimmed.startsWith("<!") ||
-    trimmed.startsWith("<html") ||
-    trimmed.startsWith("<HTML");
+    const rawText = await res.text();
+    const trimmed = rawText.trim();
+    const isHtml =
+      trimmed.startsWith("<!") ||
+      trimmed.startsWith("<html") ||
+      trimmed.startsWith("<HTML");
 
-  if (isHtml || res.status === 404) {
-    throw new Error(
-      "API endpoint not found (404). If deployed on Vercel, ensure the `api/` folder and `vercel.json` are pushed and `GEMINI_API_KEY` is set in Vercel Environment Variables."
-    );
+    if (isHtml || res.status === 404) {
+      throw new Error(
+        "API endpoint not found (404). If deployed on Vercel, ensure the `api/` folder and `vercel.json` are pushed and `GEMINI_API_KEY` is set in Vercel Environment Variables."
+      );
+    }
+
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = trimmed ? (JSON.parse(trimmed) as Record<string, unknown>) : {};
+    } catch {
+      if ((res.status === 503 || res.status === 504) && attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 1400 * (attempt + 1)));
+        continue;
+      }
+      throw new Error(
+        `Server returned an unexpected response (${res.status}). Please try again.`
+      );
+    }
+
+    if (!res.ok) {
+      if ((res.status === 503 || res.status === 504) && attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 1400 * (attempt + 1)));
+        continue;
+      }
+      const msg =
+        typeof parsed.error === "string"
+          ? parsed.error
+          : `Request failed (${res.status}).`;
+      throw new Error(msg);
+    }
+
+    return parsed as T;
   }
 
-  let parsed: Record<string, unknown> = {};
-  try {
-    parsed = trimmed ? (JSON.parse(trimmed) as Record<string, unknown>) : {};
-  } catch {
-    throw new Error(
-      `Server returned an unexpected response (${res.status}). Please try again.`
-    );
-  }
-
-  if (!res.ok) {
-    const msg =
-      typeof parsed.error === "string"
-        ? parsed.error
-        : `Request failed (${res.status}).`;
-    throw new Error(msg);
-  }
-
-  return parsed as T;
+  throw new Error("Request failed (503).");
 }
 
 export default function App() {
@@ -351,9 +364,19 @@ export default function App() {
         });
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Network error while generating."
-      );
+      const rawMsg =
+        err instanceof Error ? err.message : "Network error while generating.";
+      const lower = rawMsg.toLowerCase();
+      if (
+        lower.includes("high demand") ||
+        lower.includes("unavailable") ||
+        lower.includes("503") ||
+        lower.includes("timed out")
+      ) {
+        setError(t.highDemandError);
+      } else {
+        setError(rawMsg);
+      }
     } finally {
       setIsLoading(false);
     }

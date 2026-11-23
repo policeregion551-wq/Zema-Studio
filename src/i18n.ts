@@ -73,6 +73,7 @@ export interface TranslationBundle {
   expiresPrefix: string;
   removeLabel: string;
   retryBtn: string;
+  highDemandError: string;
 }
 
 export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
@@ -168,6 +169,8 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "የሚጠፋበት",
     removeLabel: "አሁን አጥፋ",
     retryBtn: "እንደገና ሞክር",
+    highDemandError:
+      "የAI አገልጋዩ ለጊዜው በብዙ ተጠቃሚዎች ተጨናንቋል (503)። እባክዎ ከጥቂት ሰከንዶች በኋላ «እንደገና ሞክር» የሚለውን ይጫኑ።",
   },
   en: {
     brandName: "Zema Studio",
@@ -261,6 +264,8 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "Expires in",
     removeLabel: "Remove now",
     retryBtn: "Try again",
+    highDemandError:
+      "The AI server is temporarily busy due to high demand (503). Please wait a few seconds and click Try again.",
   },
   om: {
     brandName: "Zema Studio",
@@ -354,6 +359,8 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "Kan badu",
     removeLabel: "Amma haqi",
     retryBtn: "Irra deebi'ii yaali",
+    highDemandError:
+      "Tajaajilli AI yeroof baay'ina fayyadamtootaatiin dhiphateera (503). Sekondii muraasa eegaa «Irra deebi'ii yaali» cuqaasaa.",
   },
   ti: {
     brandName: "ዜማ ስቱዲዮ",
@@ -447,6 +454,8 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "ዝጠፍኣሉ",
     removeLabel: "ሕጂ ደምስስ",
     retryBtn: "እንደገና ፈትን",
+    highDemandError:
+      "ኣገልግሎት AI ብግዜያዊነት ብብዙሕ ተጠቀምቲ ተጻዒቑ ኣሎ (503)። በጃኹም ድሕሪ ቁሩብ ሰከንዳት «እንደገና ፈትን» ጠውቑ።",
   },
   ar: {
     brandName: "استوديو زيما",
@@ -540,6 +549,8 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "ينتهي خلال",
     removeLabel: "حذف الآن",
     retryBtn: "أعد المحاولة",
+    highDemandError:
+      "خادم الذكاء الاصطناعي مشغول مؤقتاً بسبب كثرة الطلبات (503). يرجى الانتظار بضع ثوانٍ ثم الضغط على «أعد المحاولة».",
   },
   fr: {
     brandName: "Zema Studio",
@@ -633,5 +644,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     expiresPrefix: "Expire dans",
     removeLabel: "Supprimer",
     retryBtn: "Réessayer",
+    highDemandError:
+      "Le serveur IA est temporairement surchargé (503). Veuillez patienter quelques secondes puis cliquer sur « Réessayer ».",
   },
 };

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import fs from "fs";
+import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
@@ -18,6 +19,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 async function startServer() {
   const app = express();
+  const httpServer = http.createServer(app);
   app.use(express.json({ limit: "25mb" }));
 
   app.use("/api", (req, res, next) => {
@@ -98,7 +100,11 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+        ws: { server: httpServer },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -115,7 +121,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server listening on http://localhost:${PORT}`);
   });
 }

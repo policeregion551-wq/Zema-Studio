@@ -38,49 +38,24 @@ async function postApiJson<T>(url: string, body: unknown): Promise<T> {
   const configuredBase = (
     (import.meta.env.VITE_API_BASE_URL as string | undefined) || ""
   ).replace(/\/$/, "");
-  const primaryUrl = configuredBase ? `${configuredBase}${url}` : url;
+  const targetUrl = configuredBase ? `${configuredBase}${url}` : url;
 
-  const execute = async (targetUrl: string) => {
-    const res = await fetch(targetUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const rawText = await res.text();
-    const trimmed = rawText.trim();
-    const isHtml =
-      trimmed.startsWith("<!") ||
-      trimmed.startsWith("<html") ||
-      trimmed.startsWith("<HTML");
-    return { res, trimmed, isHtml };
-  };
+  const res = await fetch(targetUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-  let { res, trimmed, isHtml } = await execute(primaryUrl);
-
-  // If deployed on static hosting without /api/* (e.g., Firebase Hosting), try Shared App backend if different origin
-  const fallbackOrigin =
-    "https://ais-pre-dhjgpsropemwrm6czaerk4-340456486263.europe-west1.run.app";
-  if (
-    (res.status === 404 || isHtml) &&
-    !configuredBase &&
-    typeof window !== "undefined" &&
-    window.location.origin !== fallbackOrigin
-  ) {
-    try {
-      const retry = await execute(`${fallbackOrigin}${url}`);
-      if (!retry.isHtml && retry.res.status !== 404) {
-        res = retry.res;
-        trimmed = retry.trimmed;
-        isHtml = retry.isHtml;
-      }
-    } catch {
-      // Keep original response error
-    }
-  }
+  const rawText = await res.text();
+  const trimmed = rawText.trim();
+  const isHtml =
+    trimmed.startsWith("<!") ||
+    trimmed.startsWith("<html") ||
+    trimmed.startsWith("<HTML");
 
   if (isHtml || res.status === 404) {
     throw new Error(
-      "API endpoint is not available on this host (404). Open the live full-stack server URL or deploy the Express backend (`server.ts`)."
+      "API endpoint not found (404). If deployed on Vercel, ensure the `api/` folder and `vercel.json` are pushed and `GEMINI_API_KEY` is set in Vercel Environment Variables."
     );
   }
 

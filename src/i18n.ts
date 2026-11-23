@@ -72,6 +72,7 @@ export interface TranslationBundle {
   autoDeleteNotice: string;
   expiresPrefix: string;
   removeLabel: string;
+  retryBtn: string;
 }
 
 export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
@@ -166,6 +167,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "ያለ ምዝገባ እና ያለ ሎጊን ይስሩ — የተሰራው ስራ ከ10 ደቂቃ በኋላ በራሱ ይጠፋል፤ ወዲያውኑ ያውርዱ።",
     expiresPrefix: "የሚጠፋበት",
     removeLabel: "አሁን አጥፋ",
+    retryBtn: "እንደገና ሞክር",
   },
   en: {
     brandName: "Zema Studio",
@@ -258,6 +260,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "No sign-up or login — creations auto-delete after 10 minutes. Download immediately.",
     expiresPrefix: "Expires in",
     removeLabel: "Remove now",
+    retryBtn: "Try again",
   },
   om: {
     brandName: "Zema Studio",
@@ -350,6 +353,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "Galmee fi seensa malee hojjedhu — hojiin uumame daqiiqaa 10 booda ofumaan bada; battalumatti buusi.",
     expiresPrefix: "Kan badu",
     removeLabel: "Amma haqi",
+    retryBtn: "Irra deebi'ii yaali",
   },
   ti: {
     brandName: "ዜማ ስቱዲዮ",
@@ -442,6 +446,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "ብዘይ ምዝገባን ሎጊንን ስርሑ — ዝተሰርሐ ድሕሪ 10 ደቒቕ ብርእሱ ይጠፍእ፤ ብቕጽበት ኣውርዱ።",
     expiresPrefix: "ዝጠፍኣሉ",
     removeLabel: "ሕጂ ደምስስ",
+    retryBtn: "እንደገና ፈትን",
   },
   ar: {
     brandName: "استوديو زيما",
@@ -534,6 +539,7 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "بدون تسجيل أو دخول — تُحذف الأعمال تلقائياً بعد 10 دقائق؛ يمكنك التحميل فوراً.",
     expiresPrefix: "ينتهي خلال",
     removeLabel: "حذف الآن",
+    retryBtn: "أعد المحاولة",
   },
   fr: {
     brandName: "Zema Studio",
@@ -626,5 +632,6 @@ export const TRANSLATIONS: Record<UiLanguage, TranslationBundle> = {
     autoDeleteNotice: "Sans inscription ni connexion — vos créations expirent après 10 minutes. Téléchargez immédiatement.",
     expiresPrefix: "Expire dans",
     removeLabel: "Supprimer",
+    retryBtn: "Réessayer",
   },
 };

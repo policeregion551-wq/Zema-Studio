@@ -23,6 +23,7 @@ interface StudioStageProps {
   nowMs: number;
   onSelectHistory: (item: CreationResult) => void;
   onDeleteHistory: (id: string) => void;
+  onRetry: () => void;
   t: TranslationBundle;
 }
 
@@ -50,6 +51,7 @@ export function StudioStage({
   nowMs,
   onSelectHistory,
   onDeleteHistory,
+  onRetry,
   t,
 }: StudioStageProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export function StudioStage({
           </div>
         ) : error ? (
           <div className="flex-1 flex flex-col items-center justify-center py-10 px-4">
-            <div className="max-w-lg w-full p-5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="max-w-lg w-full p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="space-y-1.5 min-w-0">
@@ -101,6 +103,13 @@ export function StudioStage({
                   </p>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={onRetry}
+                className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer"
+              >
+                {t.retryBtn}
+              </button>
             </div>
           </div>
         ) : !result ? (

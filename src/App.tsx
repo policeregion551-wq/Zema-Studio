@@ -179,18 +179,39 @@ export default function App() {
 
   const handlePhotoFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    setPhotoMimeType(file.type || "image/png");
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       setPhotoPreviewUrl(dataUrl);
-      setPhotoBase64(dataUrl);
+
+      // Downscale for fast Vision API upload while keeping original for crisp video rendering
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1024;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          setPhotoBase64(canvas.toDataURL("image/jpeg", 0.85));
+          setPhotoMimeType("image/jpeg");
+        } else {
+          setPhotoBase64(dataUrl);
+          setPhotoMimeType(file.type || "image/png");
+        }
+      };
+      img.onerror = () => {
+        setPhotoBase64(dataUrl);
+        setPhotoMimeType(file.type || "image/png");
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const runGeneration = async () => {
     if (isLoading) return;
 
     if (mode === "photo-video" && !photoBase64) {
@@ -331,6 +352,11 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+    void runGeneration();
   };
 
   return (
@@ -699,6 +725,7 @@ export default function App() {
                 setError(null);
               }}
               onDeleteHistory={handleDeleteHistory}
+              onRetry={() => void runGeneration()}
               t={t}
             />
           </div>

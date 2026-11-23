@@ -127,7 +127,7 @@ function drawSceneElements(
   const skyBottom = scene.skyBottom || "#3B82F6";
   const ground = scene.groundColor || "#1E293B";
   const accent = scene.accentColor || "#F59E0B";
-  const sceneType = scene.sceneType || "mountains";
+  const sceneType = (scene.sceneType || "mountains").toLowerCase();
 
   // Sky gradient
   const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
@@ -139,7 +139,13 @@ function drawSceneElements(
   // Sun / Moon orb
   ctx.fillStyle = accent;
   ctx.beginPath();
-  ctx.arc(w * (0.25 + progress * 0.12), h * 0.3, Math.min(w, h) * 0.08, 0, Math.PI * 2);
+  ctx.arc(
+    w * (0.25 + progress * 0.12),
+    h * 0.28,
+    Math.min(w, h) * 0.08,
+    0,
+    Math.PI * 2
+  );
   ctx.fill();
 
   const shiftX =
@@ -157,7 +163,6 @@ function drawSceneElements(
       const bh = h * (0.28 + ((i * 37) % 5) * 0.08);
       const bx = i * (w / buildingCount) + shiftX * 0.5;
       ctx.fillRect(bx, h - bh, bw, bh);
-      // Warm windows
       ctx.fillStyle = `${accent}AA`;
       for (let wy = h - bh + 20; wy < h - 40; wy += 28) {
         for (let wx = bx + 10; wx < bx + bw - 14; wx += 18) {
@@ -184,7 +189,6 @@ function drawSceneElements(
       ctx.stroke();
     }
   } else if (sceneType === "coffee") {
-    // Warm table & stylized jebena / cup silhouette
     ctx.fillStyle = ground;
     ctx.fillRect(0, h * 0.7, w, h * 0.3);
     ctx.fillStyle = accent;
@@ -196,8 +200,55 @@ function drawSceneElements(
     ctx.beginPath();
     ctx.arc(w * 0.58, h * 0.59, 26, -Math.PI / 2, Math.PI / 2);
     ctx.stroke();
+  } else if (sceneType === "forest") {
+    ctx.fillStyle = `${ground}AA`;
+    ctx.fillRect(0, h * 0.72, w, h * 0.28);
+    const treeCount = 16;
+    for (let i = -1; i <= treeCount; i++) {
+      const tx = i * (w / treeCount) + shiftX * 0.6;
+      const th = h * (0.24 + ((i * 19) % 4) * 0.05);
+      ctx.fillStyle = i % 2 === 0 ? ground : `${ground}CC`;
+      ctx.beginPath();
+      ctx.moveTo(tx, h * 0.75 - th);
+      ctx.lineTo(tx - 46, h * 0.75);
+      ctx.lineTo(tx + 46, h * 0.75);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else if (sceneType === "desert") {
+    // Smooth rolling sand dunes
+    ctx.fillStyle = `${ground}AA`;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let x = 0; x <= w + 40; x += 24) {
+      const y = h * 0.62 + Math.sin((x + shiftX * 0.5) * 0.008) * (h * 0.08);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = ground;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let x = 0; x <= w + 40; x += 24) {
+      const y = h * 0.76 + Math.cos((x + shiftX) * 0.01) * (h * 0.07);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+  } else if (sceneType === "abstract") {
+    for (let i = 0; i < 5; i++) {
+      const cx = w * (0.2 + i * 0.16) + Math.sin(timeSec + i) * 30;
+      const cy = h * (0.5 + Math.cos(timeSec * 0.8 + i) * 0.12);
+      ctx.fillStyle = i % 2 === 0 ? `${accent}44` : `${ground}66`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.min(w, h) * (0.14 + (i % 3) * 0.05), 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
-    // Layered mountain / forest / desert ridges
+    // Layered mountains
     ctx.fillStyle = `${ground}AA`;
     ctx.beginPath();
     ctx.moveTo(0, h);
@@ -255,7 +306,10 @@ function getSupportedMimeType(): string {
     "video/webm",
   ];
   for (const m of candidates) {
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m)) {
+    if (
+      typeof MediaRecorder !== "undefined" &&
+      MediaRecorder.isTypeSupported(m)
+    ) {
       return m;
     }
   }
@@ -295,7 +349,10 @@ export async function renderTextVideoToBlobUrl(
   const fps = 30;
   const stream = canvas.captureStream(fps);
   const mimeType = getSupportedMimeType();
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 2500000,
+  });
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
@@ -320,7 +377,6 @@ export async function renderTextVideoToBlobUrl(
         return;
       }
 
-      // Find active scene
       let accum = 0;
       let activeScene = scenes[scenes.length - 1];
       let sceneProgress = 1;
@@ -390,7 +446,10 @@ export async function renderPhotoVideoToBlobUrl(
   const fps = 30;
   const stream = canvas.captureStream(fps);
   const mimeType = getSupportedMimeType();
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2800000 });
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 2800000,
+  });
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
@@ -401,7 +460,6 @@ export async function renderPhotoVideoToBlobUrl(
   const panX = choreography.panX ?? 0.03;
   const panY = choreography.panY ?? -0.02;
 
-  // Base cover scale
   const imgRatio = img.width / img.height;
   const canvasRatio = width / height;
   const baseW = imgRatio > canvasRatio ? height * imgRatio : width;

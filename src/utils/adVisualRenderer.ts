@@ -38,12 +38,18 @@ export function renderAdPosterPng(ad: AdContent): string {
   const textHex =
     ad.textHex && /^#[0-9A-Fa-f]{6}$/.test(ad.textHex) ? ad.textHex : "#F8FAFC";
 
+  const isRtl = /[\u0600-\u06FF]/.test(ad.headline || "");
+  ctx.direction = isRtl ? "rtl" : "ltr";
+  ctx.textAlign = isRtl ? "right" : "left";
+  const anchorX = isRtl ? canvas.width - 96 : 96;
+
   // Clean layered studio backdrop
   ctx.fillStyle = bgHex;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Subtle geometric accent sweep
-  const grad = ctx.createRadialGradient(1060, 140, 40, 1060, 140, 560);
+  const glowX = isRtl ? 220 : 1060;
+  const grad = ctx.createRadialGradient(glowX, 140, 40, glowX, 140, 560);
   grad.addColorStop(0, `${accentHex}55`);
   grad.addColorStop(1, "transparent");
   ctx.fillStyle = grad;
@@ -56,7 +62,7 @@ export function renderAdPosterPng(ad: AdContent): string {
 
   // Accent bar
   ctx.fillStyle = accentHex;
-  ctx.fillRect(96, 110, 72, 6);
+  ctx.fillRect(isRtl ? anchorX - 72 : anchorX, 110, 72, 6);
 
   // Headline
   ctx.fillStyle = textHex;
@@ -71,7 +77,7 @@ export function renderAdPosterPng(ad: AdContent): string {
 
   let y = 148;
   for (const line of headlineLines) {
-    ctx.fillText(line, 96, y);
+    ctx.fillText(line, anchorX, y);
     y += 72;
   }
 
@@ -87,7 +93,7 @@ export function renderAdPosterPng(ad: AdContent): string {
       canvas.width - 240
     ).slice(0, 3);
     for (const line of subLines) {
-      ctx.fillText(line, 96, y);
+      ctx.fillText(line, anchorX, y);
       y += 42;
     }
   }
@@ -100,7 +106,7 @@ export function renderAdPosterPng(ad: AdContent): string {
     const textWidth = ctx.measureText(ctaText).width;
     const btnW = Math.min(canvas.width - 192, textWidth + 64);
     const btnH = 60;
-    const btnX = 96;
+    const btnX = isRtl ? anchorX - btnW : anchorX;
     const btnY = canvas.height - 156;
 
     ctx.fillStyle = accentHex;
@@ -110,7 +116,7 @@ export function renderAdPosterPng(ad: AdContent): string {
 
     ctx.fillStyle = "#FFFFFF";
     ctx.textBaseline = "middle";
-    ctx.fillText(ctaText, btnX + 32, btnY + btnH / 2);
+    ctx.fillText(ctaText, isRtl ? anchorX - 32 : btnX + 32, btnY + btnH / 2);
   }
 
   return canvas.toDataURL("image/png");

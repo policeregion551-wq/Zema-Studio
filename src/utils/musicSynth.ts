@@ -375,8 +375,8 @@ export async function synthesizeMusicToWavUrl(
           { step: 24, midi: 64, lengthSteps: 4, velocity: 0.8 },
         ];
 
-  const instrument = score.instrument ?? "piano";
-  const drumStyle = score.drumStyle ?? "soft";
+  const instrument = String(score.instrument ?? "piano").toLowerCase();
+  const drumStyle = String(score.drumStyle ?? "soft").toLowerCase();
 
   for (let loopIdx = 0; loopIdx < numLoops; loopIdx++) {
     const loopStart = loopIdx * loopDuration;
@@ -386,15 +386,19 @@ export async function synthesizeMusicToWavUrl(
       const chordStart = loopStart + cIdx * stepsPerChord * stepDuration;
       const chordDur = stepsPerChord * stepDuration;
       if (chord.notes && chord.notes.length > 0) {
-        triggerChordPad(ctx, masterBus, chord.notes, chordStart, chordDur);
+        const clampedNotes = chord.notes.map((n) =>
+          Math.max(36, Math.min(84, Math.round(n)))
+        );
+        triggerChordPad(ctx, masterBus, clampedNotes, chordStart, chordDur);
       }
       if (chord.bassNote) {
-        triggerBass(ctx, masterBus, chord.bassNote, chordStart, chordDur * 0.85);
+        const bass = Math.max(28, Math.min(60, Math.round(chord.bassNote)));
+        triggerBass(ctx, masterBus, bass, chordStart, chordDur * 0.85);
         if (stepsPerChord >= 8) {
           triggerBass(
             ctx,
             masterBus,
-            chord.bassNote,
+            bass,
             chordStart + chordDur * 0.5,
             chordDur * 0.45
           );
@@ -403,16 +407,17 @@ export async function synthesizeMusicToWavUrl(
     });
 
     for (const note of melody) {
-      const step = Math.max(0, Math.min(31, note.step));
+      const step = Math.max(0, Math.min(31, Math.round(note.step ?? 0)));
+      const midi = Math.max(48, Math.min(96, Math.round(note.midi ?? 69)));
       const start = loopStart + step * stepDuration;
       const dur = Math.max(1, note.lengthSteps ?? 2) * stepDuration;
       triggerMelodyVoice(
         ctx,
         masterBus,
-        midiToFreq(note.midi),
+        midiToFreq(midi),
         start,
         dur,
-        note.velocity ?? 0.78,
+        Math.max(0.2, Math.min(1, note.velocity ?? 0.78)),
         instrument
       );
     }
